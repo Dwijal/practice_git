@@ -1,0 +1,68 @@
+# This pipeline demonstrates how to react to the different values of Build.Reason
+
+# We change the pipeline's display name to easily see the trigger reason
+name: $(Build.BuildId) - Triggered by $(Build.Reason)
+
+# --- Define Triggers to Test Different Scenarios ---
+
+# 1. For 'IndividualCI' or 'BatchedCI'
+# This runs the pipeline when you push a commit to the 'main' branch.
+trigger:
+  batch: true # Use batch:true to get 'BatchedCI' if commits are pushed close together
+  branches:
+    include:
+    - main
+
+# 2. For 'PullRequest'
+# This runs the pipeline when a pull request is created or updated for the 'main' branch.
+pr:
+- main
+
+# 3. For 'Schedule'
+# This runs the pipeline on a schedule. This example runs at 10 PM UTC every day.
+schedules:
+- cron: "0 22 * * *" # 10 PM UTC daily
+  displayName: Daily Scheduled Build
+  branches:
+    include:
+    - main
+  always: true # 'true' means run even if there are no new code changes.
+
+# Use a standard agent pool
+pool:
+  name: 'DwiPool'
+  demands:
+    - agent.name -equals dwivm2
+
+# --- Use conditional logic based on Build.Reason ---
+
+variables:
+  # Here we use compile-time expressions to set a variable called 'runMessage'.
+  # This is the most efficient way to handle these conditions.
+  ${{ if eq(variables['Build.Reason'], 'Manual') }}:
+    runMessage: 'This pipeline was started manually by a user.'
+  ${{ elseif eq(variables['Build.Reason'], 'IndividualCI') }}:
+    runMessage: 'This was a CI build, triggered by a single push.'
+  ${{ elseif eq(variables['Build.Reason'], 'BatchedCI') }}:
+    runMessage: 'This was a CI build, triggered by a batch of multiple pushes.'
+  ${{ elseif eq(variables['Build.Reason'], 'Schedule') }}:
+    runMessage: 'This pipeline was started automatically by a schedule.'
+  ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
+    runMessage: 'This is a validation build for a Pull Request.'
+  ${{ elseif eq(variables['Build.Reason'], 'BuildCompletion') }}:
+    runMessage: 'This pipeline was triggered by another build completing.'
+  ${{ else }}:
+    # A catch-all for other reasons like ResourceTrigger, etc.
+    runMessage: 'This pipeline was triggered by another reason not explicitly listed.'
+
+
+# --- The job just prints the results ---
+jobs:
+- job: DemonstrateBuildReason
+  displayName: 'Display Build Reason and Message'
+  steps:
+  - script: |
+      echo "The official Build.Reason is: $(Build.Reason)"
+      echo "--------------------------------------------------------"
+      echo "The custom message we set is: $(runMessage)"
+    displayName: 'Show the reason and the conditional message'
