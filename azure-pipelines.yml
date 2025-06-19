@@ -21,7 +21,7 @@ pr:
 # 3. For 'Schedule'
 # This runs the pipeline on a schedule. This example runs at 10 PM UTC every day.
 schedules:
-- cron: "03 14 * * *" # 10 PM UTC daily
+- cron: "40 08 * * *" # 10 PM UTC daily
   displayName: Daily Scheduled Build
   branches:
     include:
